@@ -25,6 +25,17 @@ jobs:
         run: |
           npm install -g hexo-cli
           npm install # 自动安装 package.json 中的 hexo-deployer-cos 插件
+      - name: Debug - Check if secrets are available
+        env:
+          HAS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID != '' }}
+          HAS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY != '' }}
+          HAS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET != '' }}
+          HAS_REGION: ${{ secrets.TENCENT_COS_REGION != '' }}
+        run: |
+          echo "Secret ID available: $HAS_SECRET_ID"
+          echo "Secret Key available: $HAS_SECRET_KEY"
+          echo "Bucket available: $HAS_BUCKET"
+          echo "Region available: $HAS_REGION"
 
       - name: Build and Deploy to COS
         env:
