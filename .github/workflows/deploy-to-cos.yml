@@ -101,9 +101,10 @@ jobs:
 
       - name: Install coscmd
         run: pip3 install --user coscmd
-
-      - name: Install coscmd
-        run: pip3 install --user coscmd
+        # 如果命令找不到，加下面一行（Actions runner 有时 PATH 没更新）
+        # run: |
+        #   pip3 install --user coscmd
+        #   echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Upload to Tencent COS
         env:
@@ -112,10 +113,17 @@ jobs:
           BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
           REGION: ${{ secrets.TENCENT_COS_REGION }}
         run: |
-          # 配置（直接用参数，非交互写入 ~/.cos.conf）
+          # 配置（已成功，保留）
           coscmd config -a "$SECRET_ID" -s "$SECRET_KEY" -b "$BUCKET" -r "$REGION" -m 30
           
-          # 上传 public/ 到 COS 根目录，-r 递归，--skip-md5 跳过 md5 校验加速
-          coscmd upload -r --skip-md5 public/ /
+          # 调试：打印配置确认
+          echo "Config file contents (masked):"
+          cat ~/.cos.conf | sed 's/secret_id = .*/secret_id = ***/; s/secret_key = .*/secret_key = ***/'
+          
+          # 上传：-r 递归, -s sync 跳过相同文件, --skipmd5 跳过 MD5 计算加速
+          coscmd upload -r -s --skipmd5 public/ /
+          
+          # 可选：如果想强制覆盖所有文件（不跳过），去掉 -s --skipmd5，用 -f
+          # coscmd upload -r -f public/ /
           
           echo "COS upload completed successfully"
