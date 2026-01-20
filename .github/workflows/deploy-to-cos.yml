@@ -37,6 +37,18 @@ jobs:
           echo "Secret Key available: $HAS_SECRET_KEY"
           echo "Bucket available: $HAS_BUCKET"
           echo "Region available: $HAS_REGION"
+      - name: Strong Secret Debug # 增强验证环境参数获取。
+        env:
+          ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+          KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+          BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+          REGION: ${{ secrets.TENCENT_COS_REGION }}
+        run: |
+          echo "ID len: ${#ID}"
+          echo "KEY len: ${#KEY}"
+          echo "Bucket: ${BUCKET:-EMPTY}"
+          echo "Region: ${REGION:-EMPTY}"
+          [ ${#ID} -eq 0 ] && echo "ID is empty/missing!" && exit 1
 
       # - name: Build and Deploy to COS
       #   env:
