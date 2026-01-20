@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Dependencies
@@ -60,11 +60,27 @@ jobs:
           hexo generate --debug  # 添加调试信息
           ls -la public/  # 确认生成的文件
 
+      # - name: Hexo Deploy to COS
+      #   env:
+      #     TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+      #     TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+      #     TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      #     TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      #   run: |
+      #     hexo deploy --debug  # 显示部署详细信息6
+
       - name: Hexo Deploy to COS
         env:
           TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
           TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
           TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
           TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+          NODE_ENV: development
         run: |
-          hexo deploy --debug  # 显示部署详细信息6
+          set -e
+          # 打印关键配置（脱敏）
+          echo "Bucket: ${TENCENT_COS_BUCKET:0:10}..."
+          echo "Region: $TENCENT_COS_REGION"
+          # 执行部署并捕获详细日志
+          hexo deploy --debug 2>&1 | tee deploy.log
+          cat deploy.log
