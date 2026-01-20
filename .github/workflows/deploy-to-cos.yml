@@ -45,6 +45,13 @@ jobs:
           BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
           REGION: ${{ secrets.TENCENT_COS_REGION }}
         run: |
+          echo "调试输出：请检查下面值是否正确"
+          echo "SECRET_ID 长度: ${#SECRET_ID}"
+          echo "SECRET_KEY 长度: ${#SECRET_KEY}"
+          echo "BUCKET: '$BUCKET'"
+          echo "REGION: '$REGION'"
+          echo "REGION 长度: ${#REGION}"
+          
           # 配置（已成功，保留）
           coscmd config -a "$SECRET_ID" -s "$SECRET_KEY" -b "$BUCKET" -r "$REGION" -m 30
           
