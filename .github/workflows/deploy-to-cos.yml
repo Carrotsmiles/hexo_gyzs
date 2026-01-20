@@ -7,6 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: TENCENT_COS  # 若为环境级机密，必须指定
     # 添加 commit msg 过滤条件
     if: ${{ contains(github.event.head_commit.message, 'deploy')}} # 条件加在这里
     steps:
