@@ -107,4 +107,4 @@ deploy:
   bucket: $TENCENT_COS_BUCKET # 存储桶名称，如 blog-125xxx00
   region: $TENCENT_COS_REGION # 地域，如 ap-guangzhou
   remotePath: /  # 远程路径，可选
-  clean: true # 部署前清理 COS 中对应目录的旧文件
+  # clean: true # 部署前清理 COS 中对应目录的旧文件
