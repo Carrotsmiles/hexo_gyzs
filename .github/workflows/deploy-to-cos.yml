@@ -38,27 +38,24 @@ jobs:
           pip3 install --user coscmd
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Configure & Upload to COS
+      - name: Upload to Tencent COS
         env:
-          SECRET_ID:  ${{ secrets.TENCENT_COS_SECRET_ID }}
+          SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
           SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
-          BUCKET:     ${{ secrets.TENCENT_COS_BUCKET }}
-          REGION:     ${{ secrets.TENCENT_COS_REGION }}
+          BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+          REGION: ${{ secrets.TENCENT_COS_REGION }}
         run: |
-          # 快速失败检查（防止 secrets 没配置导致后续无意义运行）
-          : "${SECRET_ID:?SECRET_ID is required}"
-          : "${SECRET_KEY:?SECRET_KEY is required}"
-          : "${BUCKET:?BUCKET is required}"
-          : "${REGION:?REGION is required}"
-
-          # 配置 coscmd（-m 30 增加连接数）
+          # 配置（已成功，保留）
           coscmd config -a "$SECRET_ID" -s "$SECRET_KEY" -b "$BUCKET" -r "$REGION" -m 30
-
-          # 打印配置确认（已脱敏）
-          echo "COS config preview (masked):"
-          head -n 10 ~/.cos.conf | sed 's/secret_id = .*/secret_id = ***/; s/secret_key = .*/secret_key = ***/'
-
-          # 同步上传（跳过相同文件 + 跳过 MD5 校验加速）
+          
+          # 调试：打印配置确认
+          echo "Config file contents (masked):"
+          cat ~/.cos.conf | sed 's/secret_id = .*/secret_id = ***/; s/secret_key = .*/secret_key = ***/'
+          
+          # 上传：-r 递归, -s sync 跳过相同文件, --skipmd5 跳过 MD5 计算加速
           coscmd upload -r -s --skipmd5 public/ /
-
-          echo "COS sync upload completed"
+          
+          # 可选：如果想强制覆盖所有文件（不跳过），去掉 -s --skipmd5，用 -f
+          # coscmd upload -r -f public/ /
+          
+          echo "COS upload completed successfully"
