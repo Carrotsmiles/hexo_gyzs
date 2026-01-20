@@ -81,20 +81,38 @@ jobs:
       #   run: |
       #     hexo deploy --debug  # 显示部署详细信息6
 
-      - name: Hexo Deploy to COS
+      # - name: Hexo Deploy to COS
+      #   env:
+      #     TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+      #     TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+      #     TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      #     TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      #     NODE_ENV: development
+      #   run: |
+      #     set -e
+      #     # 打印关键配置（脱敏）
+      #     echo "Bucket: ${TENCENT_COS_BUCKET:0:5}..."
+      #     echo "Region: ${TENCENT_COS_REGION:0:5}"
+      #     echo "Region: ${TENCENT_COS_SECRET_ID:0:5}"
+      #     echo "Region: ${TENCENT_COS_SECRET_KEY:0:5}"
+      #     # 执行部署并捕获详细日志
+      #     hexo deploy --debug 2>&1 | tee deploy.log
+      #     cat deploy.log
+
+      - name: Install coscmd
+        run: pip3 install --user coscmd
+
+      - name: Upload to Tencent COS
         env:
-          TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
-          TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
-          TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
-          TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
-          NODE_ENV: development
+          SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+          SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+          BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+          REGION: ${{ secrets.TENCENT_COS_REGION }}
         run: |
-          set -e
-          # 打印关键配置（脱敏）
-          echo "Bucket: ${TENCENT_COS_BUCKET:0:5}..."
-          echo "Region: ${TENCENT_COS_REGION:0:5}"
-          echo "Region: ${TENCENT_COS_SECRET_ID:0:5}"
-          echo "Region: ${TENCENT_COS_SECRET_KEY:0:5}"
-          # 执行部署并捕获详细日志
-          hexo deploy --debug 2>&1 | tee deploy.log
-          cat deploy.log
+          # 配置（-l 登录不交互）
+          coscmd config -l -a "$SECRET_ID" -s "$SECRET_KEY" -b "$BUCKET" -r "$REGION" -m 1
+          
+          # 上传 public/ 到 COS 根目录，--skip-md5 加速
+          coscmd upload -r --skip-md5 public/ /
+          
+          echo "COS upload completed"
