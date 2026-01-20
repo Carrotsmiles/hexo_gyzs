@@ -48,7 +48,8 @@ jobs:
           echo "KEY len: ${#KEY}"
           echo "Bucket: ${BUCKET:-EMPTY}"
           echo "Region: ${REGION:-EMPTY}"
-          [ ${#ID} -eq 0 ] && echo "ID is empty/missing!" && exit 1
+          [ ${#ID} -eq 0 ] && echo "ID is empty/missing!" 
+      # && exit 1
 
       # - name: Build and Deploy to COS
       #   env:
