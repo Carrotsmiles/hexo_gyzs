@@ -1,18 +1,20 @@
-name: Hexo Build & Deploy to Tencent COS
+name: Hexo Build and Deploy to Tencent COS
 
 on:
   push:
-    branches: [main]
+    branches: [ main ] # 主分支名称，根据实际调整
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, 'deploy')
+    environment: TENCENT_COS  # 若为环境级机密，必须指定
+    # 添加 commit msg 过滤条件
+    if: ${{ contains(github.event.head_commit.message, 'deploy')}} # 条件加在这里
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # 拉取完整提交记录
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -20,23 +22,88 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Hexo & Dependencies
+      - name: Install Dependencies
         run: |
           npm install -g hexo-cli
-          npm ci   # 比 npm install 更适合 CI 环境，更快更可靠
+          npm install # 自动安装 package.json 中的 hexo-deployer-cos 插件
+      # - name: Debug - Check if secrets are available # 后续删除
+      #   env:
+      #     HAS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+      #     HAS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+      #     HAS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      #     HAS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      #   run: |
+      #     echo "Secret ID available: $HAS_SECRET_ID"
+      #     echo "Secret Key available: $HAS_SECRET_KEY"
+      #     echo "Bucket available: $HAS_BUCKET"
+      #     echo "Region available: $HAS_REGION"
+      # - name: Strong Secret Debug # 增强验证环境参数获取。
+      #   env:
+      #     ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+      #     KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+      #     BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      #     REGION: ${{ secrets.TENCENT_COS_REGION }}
+      #   run: |
+      #     echo "ID len: ${#ID}"
+      #     echo "KEY len: ${#KEY}"
+      #     echo "Bucket: ${BUCKET:-EMPTY}"
+      #     echo "Region: ${REGION:-EMPTY}"
+      # [ ${#ID} -eq 0 ] && echo "ID is empty/missing!" && exit 1
 
-      - name: Build Hexo
+      # - name: Build and Deploy to COS
+      #   env:
+      #     # 从 GitHub Secrets 注入环境变量，匹配 _config.yml 中的占位符
+      #     TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+      #     TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+      #     TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      #     TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      #   run: |
+      #     hexo clean && hexo generate && hexo deploy # 一键编译+部署
+
+      - name: Hexo Build
+        env:
+          # 仅用于调试的输出环境变量
+          DEBUG_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+          DEBUG_REGION: ${{ secrets.TENCENT_COS_REGION }}
         run: |
+          echo "Target Bucket: $DEBUG_BUCKET"
+          echo "Target Region: $DEBUG_REGION"
           hexo clean
-          hexo generate
+          hexo generate --debug  # 添加调试信息
+          ls -la public/  # 确认生成的文件
+      # - name: Hexo Deploy to COS
+      #   env:
+      #     TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+      #     TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+      #     TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      #     TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      #   run: |
+      #     hexo deploy --debug  # 显示部署详细信息6
 
-      - name: Verify build output
-        run: ls -lh public/ | head -n 10
+      # - name: Hexo Deploy to COS
+      #   env:
+      #     TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+      #     TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+      #     TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      #     TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      #     NODE_ENV: development
+      #   run: |
+      #     set -e
+      #     # 打印关键配置（脱敏）
+      #     echo "Bucket: ${TENCENT_COS_BUCKET:0:5}..."
+      #     echo "Region: ${TENCENT_COS_REGION:0:5}"
+      #     echo "Region: ${TENCENT_COS_SECRET_ID:0:5}"
+      #     echo "Region: ${TENCENT_COS_SECRET_KEY:0:5}"
+      #     # 执行部署并捕获详细日志
+      #     hexo deploy --debug 2>&1 | tee deploy.log
+      #     cat deploy.log
 
       - name: Install coscmd
-        run: |
-          pip3 install --user coscmd
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: pip3 install --user coscmd
+        # 如果命令找不到，加下面一行（Actions runner 有时 PATH 没更新）
+        # run: |
+        #   pip3 install --user coscmd
+        #   echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Upload to Tencent COS
         env:
@@ -45,19 +112,12 @@ jobs:
           BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
           REGION: ${{ secrets.TENCENT_COS_REGION }}
         run: |
-          echo "调试输出：请检查下面值是否正确"
-          echo "SECRET_ID 长度: ${#SECRET_ID}"
-          echo "SECRET_KEY 长度: ${#SECRET_KEY}"
-          echo "BUCKET: '$BUCKET'"
-          echo "REGION: '$REGION'"
-          echo "REGION 长度: ${#REGION}"
-          
           # 配置（已成功，保留）
           coscmd config -a "$SECRET_ID" -s "$SECRET_KEY" -b "$BUCKET" -r "$REGION" -m 30
           
           # 调试：打印配置确认
-          echo "Config file contents (masked):"
-          cat ~/.cos.conf | sed 's/secret_id = .*/secret_id = ***/; s/secret_key = .*/secret_key = ***/'
+          # echo "Config file contents (masked):"
+          # cat ~/.cos.conf | sed 's/secret_id = .*/secret_id = ***/; s/secret_key = .*/secret_key = ***/'
           
           # 上传：-r 递归, -s sync 跳过相同文件, --skipmd5 跳过 MD5 计算加速
           coscmd upload -r -s --skipmd5 public/ /
