@@ -94,8 +94,8 @@ jobs:
           # cat ~/.cos.conf | sed 's/secret_id = .*/secret_id = ***/; s/secret_key = .*/secret_key = ***/'
           
           # 上传：-r 递归, -s sync 跳过相同文件, --skipmd5 跳过 MD5 计算加速
-          # coscmd upload -r -s --skipmd5 public/ /
-          coscmd upload -r public/ / # -s --skipmd5 去除此参数，避免文档微小改动无法更新
+          coscmd upload -r -s --skipmd5 public/ / # 较为全面，效率高，但注意可能微小改动不会更新
+          # coscmd upload -r public/ / # -s --skipmd5 去除此参数，避免文档微小改动无法更新，此为全量更新
           
           # 可选：如果想强制覆盖所有文件（不跳过），去掉 -s --skipmd5，用 -f
           # coscmd upload -r -f public/ /

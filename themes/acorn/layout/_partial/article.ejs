@@ -33,7 +33,14 @@
     </header>
     <% } %>
     <div class="article-entry" itemprop="articleBody">
+      <% if (post.toc !== false && theme.toc){ %>
+      <div class="js-toc"></div>
+      <div class="js-toc-content">
+        <%- post.content %>
+      </div>
+      <% } else { %>
       <%- post.content %>
+      <% } %>
     </div>
     <footer class="article-footer">
       <%- partial('post/tag') %>
